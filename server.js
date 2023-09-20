@@ -32,6 +32,13 @@ const UserSchema = new mongoose.Schema({
 		type: Array,
 		required: true,
 	},
+	savePassword: [{
+		id: String, // or whatever type your id is
+		name: String,
+		password: String,
+		hidePassword: String,
+		date: String,
+	  }],
 });
 const User = mongoose.model('users', UserSchema);
 User.createIndexes();
@@ -39,6 +46,7 @@ User.createIndexes();
 const express = require('express');
 const app = express();
 const cors = require("cors");
+
 console.log("App listen at port 5000");
 app.use(express.json());
 app.use(cors());
@@ -96,6 +104,61 @@ app.post('/register', async (req, res) => {
   }
 });
 
+app.post('/add-password', async (req, res) => {
+	try {
+	  const { login, password, newPassword } = req.body;
+  
+	  // Find the user based on their login
+	  const user = await User.findOne({ login });
+  
+	  if (!user) {
+		return res.status(404).json({ error: 'User not found' });
+	  }
+  
+	  // Add the new password to the user's savePassword array
+	  user.savePassword.push(newPassword);
+  
+	  // Save the updated user document
+	  await user.save();
+  
+	  // Return the updated user object with the new password
+	  res.json(user);
+	} catch (error) {
+	  console.error('Error:', error);
+	  res.status(500).json({ error: 'Something Went Wrong' });
+	}
+  });
+
+  app.delete('/delete-password', async (req, res) => {
+	try {
+	const { id } = req.query; 
+	  const { login, password } = req.body;
+  
+	  // Find the user by login and password to verify authentication
+	  const user = await User.findOne({ login, password });
+  
+	  if (!user) {
+		return res.status(404).json({ error: 'User not found or incorrect password' });
+	  }
+  
+	  // Log the ID here after it's defined
+	  console.log(id);
+  
+	  // Remove the specified password ID from the user's savePassword array
+	  user.savePassword = user.savePassword.filter((passwordObj) => passwordObj.id !== id);
+  
+	  console.log(user.savePassword.filter((passwordObj) => passwordObj.id !== id));
+	  console.log(user);
+  
+	  // Save the updated user object to the database
+	  await user.save(); // This line is crucial to update the database!
+  
+	  res.json({ success: true });
+	} catch (error) {
+	  console.error('Error:', error);
+	  res.status(500).json({ error: 'Something Went Wrong' });
+	}
+  });
   
   
 
